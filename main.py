@@ -5,11 +5,15 @@ Movie CLI Application with user profiles (SQLAlchemy storage).
 import random
 import difflib
 import requests
+import os
+from dotenv import load_dotenv
 from movies_storage import movie_storage_sql as storage
 from movies_storage import user_storage_sql as user_storage
 
-API_KEY = "4a64178e"
+load_dotenv()
+API_KEY = os.getenv("OMDB_API_KEY")
 OMDB_URL = "http://www.omdbapi.com/"
+
 
 def command_list_movies(user_id, username):
    """Retrieve and display all movies for a user."""
@@ -48,8 +52,9 @@ def command_add_movie(user_id):
    imdb_id = data.get("imdbID", "")
    country = data.get("Country", "Unknown")
 
+   LASTFM_API_KEY = os.getenv("LASTFM_API_KEY")
+
    try:
-       lastfm_api = "e0900388163f0e588cd0b58220d1967c"
        search = requests.get(
            "http://ws.audioscrobbler.com/2.0/",
            params={
@@ -227,7 +232,8 @@ def country_to_flag(country_name: str) -> str:
    if not code:
        return "🏳️"
 
-   return chr(ord(code[0]) + 127397) + chr(ord(code[1]) + 127397)
+   return "".join(chr(ord(c) + 127397) for c in code.upper())
+
 
 
 def command_generate_website(user_id, username):

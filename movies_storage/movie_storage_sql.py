@@ -47,57 +47,63 @@ def list_movies(user_id):
 
 def add_movie(user_id, title, year, rating, poster, imdb_id, country, soundtrack_url):
     """Add a new movie for a specific user."""
-    with engine.connect() as connection:
-        try:
-            with engine.begin() as connection:
-                connection.execute(
-                    text("""
-                        INSERT INTO movies (user_id, title, year, rating, poster, imdb_id, country, soundtrack_url)
-                        VALUES (:user_id, :title, :year, :rating, :poster, :imdb_id, :country, :soundtrack_url)
-                    """),
-                    {
-                        "user_id": user_id,
-                        "title": title,
-                        "year": year,
-                        "rating": rating,
-                        "poster": poster,
-                        "imdb_id": imdb_id,
-                        "country": country,
-                        "soundtrack_url": soundtrack_url
-                    }
-                )
-            connection.commit()
-            print(f"Movie '{title}' added successfully.")
-        except Exception as e:
-            print(f"Error: {e}")
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text("""
+                    INSERT INTO movies (user_id, title, year, rating, poster, imdb_id, country, soundtrack_url)
+                    VALUES (:user_id, :title, :year, :rating, :poster, :imdb_id, :country, :soundtrack_url)
+                """),
+                {
+                    "user_id": user_id,
+                    "title": title,
+                    "year": year,
+                    "rating": rating,
+                    "poster": poster,
+                    "imdb_id": imdb_id,
+                    "country": country,
+                    "soundtrack_url": soundtrack_url
+                }
+            )
+        print(f"Movie '{title}' added successfully.")
+    except Exception as e:
+        print(f"Error adding movie: {e}")
 
 
 def delete_movie(title, user_id):
-    """Delete a movie for a specific user."""
-    with engine.connect() as connection:
+    """Delete a movie for a specific user (only if exists)."""
+    with engine.begin() as connection:
+        exists = connection.execute(
+            text("SELECT 1 FROM movies WHERE title = :title AND user_id = :user_id"),
+            {"title": title, "user_id": user_id}
+        ).fetchone()
+        if not exists:
+            print(f"Movie '{title}' not found for this user.")
+            return
         result = connection.execute(
             text("DELETE FROM movies WHERE title = :title AND user_id = :user_id"),
             {"title": title, "user_id": user_id}
         )
-        connection.commit()
         if result.rowcount:
             print(f"Movie '{title}' deleted successfully.")
-        else:
-            print(f"Movie '{title}' not found for this user.")
 
 
 def update_movie(title, rating, user_id):
-    """Update a movie's rating for a specific user."""
-    with engine.connect() as connection:
-        result = connection.execute(
+    """Update a movie's rating for a specific user (only if exists)."""
+    with engine.begin() as connection:
+        exists = connection.execute(
+            text("SELECT 1 FROM movies WHERE title = :title AND user_id = :user_id"),
+            {"title": title, "user_id": user_id}
+        ).fetchone()
+        if not exists:
+            print(f"Movie '{title}' not found for this user.")
+            return
+        connection.execute(
             text("UPDATE movies SET rating = :rating WHERE title = :title AND user_id = :user_id"),
             {"rating": rating, "title": title, "user_id": user_id}
         )
-        connection.commit()
-        if result.rowcount:
-            print(f"Movie '{title}' updated successfully.")
-        else:
-            print(f"Movie '{title}' not found for this user.")
+        print(f"Movie '{title}' updated successfully.")
+
 
 def update_movie_note(user_id, title, note):
     with engine.connect() as connection:
